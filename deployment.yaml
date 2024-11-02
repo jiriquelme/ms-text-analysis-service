@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: text-analysis-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: text-analysis-service
+  template:
+    metadata:
+      labels:
+        app: text-analysis-service
+    spec:
+      containers:
+      - name: text-analysis-service
+        image: gcr.io/diesel-environs-435423-j6/text-analysis-service:latest  # Reemplaza con la imagen correcta en Docker Hub
+        ports:
+        - containerPort: 8000
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-secret
+              key: OPENAI_API_KEY
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: text-analysis-service
+spec:
+  selector:
+    app: text-analysis-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: LoadBalancer  # Cambia a ClusterIP o NodePort si solo necesitas acceso interno
