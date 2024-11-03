@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from django.conf import settings
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 import requests
 import openai
 import os
@@ -63,32 +65,24 @@ def analyze_text_with_openai(detected_text: str) -> str:
         print(f"Error al procesar texto con OpenAI: {e}")
         return ERROR_MESSAGE
 
-def process_image(image_file):
-    """
-    Función principal que toma un archivo de imagen, obtiene el texto detectado y lo analiza para obtener el código de departamento.
+@csrf_exempt
+def text_analysis(request):
+    if request.method == 'POST' and request.FILES.get('image'):
+        # Obtén el archivo de imagen de la solicitud
+        image_file = request.FILES['image']
 
-    :param image_file: Archivo de imagen subido.
-    :return: Código de departamento o mensaje de error.
-    """
-    # Obtener el texto desde el microservicio
-    detected_text = get_text_from_image_service(image_file)
+        detected_text = get_text_from_image_service(image_file)
 
-    if detected_text:
-        # Analizar el texto con OpenAI
         result = analyze_text_with_openai(detected_text)
-        return result
-    else:
-        return ERROR_MESSAGE
-
-# Ejemplo de uso:
-# resultado = process_image("ruta/a/tu/imagen.jpg")
-# print(resultado)
+        
+        # Devuelve el resultado en formato JSON
+        return JsonResponse({'result': result, 'texto_detectado':detected_text})
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 # ========================================================================
 #                               Render de Prueba
 # ========================================================================
-from django.shortcuts import render
-from django.http import JsonResponse
 
 def test_process_image(request):
     if request.method == 'POST' and 'image' in request.FILES:
